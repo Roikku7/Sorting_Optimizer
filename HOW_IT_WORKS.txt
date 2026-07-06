@@ -72,9 +72,12 @@ HOW TO RUN IN DEV (2 terminals)
   (Order matters: Vite first, then Electron.)
   Test file to load: Roikku7-7294441.json (at project root).
 
-  GOTCHA (until the stabilization plan is applied): dev currently
-  loads la.obf.js, NOT logic_analyze.js — so edits to the analysis
-  logic need "npm run obfuscate" before you see them.
+  Dev now loads src/logic_analyze.js directly (not the obfuscated
+  la.obf.js), so edits to the analysis logic show up on the next
+  "npm start" — no need to re-run obfuscate during development.
+  (Obfuscate is only run as part of "npm run dist".)
+
+  Run the unit tests any time with:  npm test  (vitest, 9 tests).
 
 
 HOW TO COMPILE THE ELECTRON APP (the installer)
@@ -89,14 +92,13 @@ HOW TO COMPILE THE ELECTRON APP (the installer)
     3. electron-builder    -> packages everything into a Windows
                               installer
 
-  OUTPUT: "Account Optimizer Setup 1.0.0.exe"
-    - currently lands in dist/ (mixed with the Vite bundle)
-    - after the 2026-07-06 stabilization plan it lands in release/
-  A portable unpacked build sits next to it in win-unpacked/
-  (run "Account Optimizer.exe" directly from there to test without
-  installing).
+  OUTPUT: "Account Optimizer Setup 1.0.0.exe" in the release/ folder.
+    - release/  = the installer + win-unpacked/ (electron-builder)
+    - dist/     = the Vite renderer bundle only (fed into the build)
+  A portable unpacked build sits in release/win-unpacked/ — run
+  "Account Optimizer.exe" there to test without installing.
 
-  If the build fails, first try: delete dist/ (and release/) and
+  If the build fails, first try: delete dist/ and release/ and
   re-run npm run dist.
 
 

@@ -118,15 +118,16 @@ export function RuneViewer({ data }) {
 
   useEffect(() => {
     async function loadIcons() {
-      const newIcons = {};
-      for (const rune of data) {
-        if (window.electronAPI?.getIconPath) {
-          newIcons[rune.set_name] = await window.electronAPI.getIconPath(rune.set_name);
-        } else {
-          newIcons[rune.set_name] = `/icone/${rune.set_name}.png`;
-        }
-      }
-      setIcons(newIcons);
+      const uniqueSets = [...new Set(data.map((r) => r.set_name))];
+      const entries = await Promise.all(
+        uniqueSets.map(async (setName) => {
+          const src = window.electronAPI?.getIconPath
+            ? await window.electronAPI.getIconPath(setName)
+            : `/icone/${setName}.png`;
+          return [setName, src];
+        })
+      );
+      setIcons(Object.fromEntries(entries));
     }
     loadIcons();
   }, [data]);

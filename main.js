@@ -2,7 +2,8 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const { analyzeRunesFromFile } = require("./src/la.obf.js");
+const logicPath = app.isPackaged ? "./src/la.obf.js" : "./src/logic_analyze.js";
+const { analyzeRunesFromFile } = require(logicPath);
 
 let mainWindow;
 
@@ -10,7 +11,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 1000,
-    icon: path.join(__dirname, "assets", "icon.png"),
+    icon: path.join(__dirname, "assets", "icone.ico"),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -49,8 +50,10 @@ ipcMain.handle('select-json-file', async () => {
 // IPC — Récupérer chemin d’icône
 // ---------------------------------------------------
 ipcMain.handle("get-icon-path", async (event, name) => {
-  const iconPath = path.join(process.resourcesPath, "assets", "icons", `${name}.png`);
-  return iconPath;
+  const base = app.isPackaged
+    ? path.join(process.resourcesPath, "assets", "icons")
+    : path.join(__dirname, "assets", "icons");
+  return path.join(base, `${name}.png`);
 });
 // ---------------------------------------------------
 // IPC — Lancer l’analyse Node

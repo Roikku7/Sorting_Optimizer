@@ -8,7 +8,7 @@ export function filterRunes(data, filters, showReapOnly) {
   return data.filter((r) => {
     if (filters.slot && r.slot !== Number(filters.slot)) return false;
     if (filters.set && r.set_name !== filters.set) return false;
-    if (filters.extra && r.extra !== Number(filters.extra)) return false;
+    if (filters.extra && !filters.extra.split(",").map(Number).includes(r.extra)) return false;
     if (filters.miss && r.missPoints < Number(filters.miss)) return false;
     if (filters.mainstat && r.mainstat.statName !== filters.mainstat) return false;
     if (showReapOnly && r.reap !== 1) return false;

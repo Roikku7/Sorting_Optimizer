@@ -28,7 +28,8 @@
       }
     ],
     "directories": {
-      "buildResources": "assets"
+      "buildResources": "assets",
+      "output": "release"
     },
     "win": {
       "icon": "assets/icone.ico",

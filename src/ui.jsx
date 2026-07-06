@@ -28,7 +28,7 @@ function RuneModal({ rune, data, onClose, icons }) {
         <h2>Rune Slot {rune.slot} - {rune.set_name}</h2>
         <img src={icons[rune.set_name]} alt={rune.set_name} />
 
-        <p><b>Main Stat:</b> {rune.mainstat.statName} {rune.mainstat.value}</p>
+        <p><b>Main Stat:</b> {rune.mainstat?.statName} {rune.mainstat?.value}</p>
         <p><b>Niveau:</b> {rune.rune_lvl}</p>
         <p><b>MissPoints:</b> {rune.missPoints} / {rune.threshold}</p>
         <p><b>Qualité:</b> {rune.extra}</p>
@@ -59,8 +59,12 @@ function RuneModal({ rune, data, onClose, icons }) {
             <h3>Comparaison</h3>
             <p>Meilleure substat : <b>{cmp.bestSub.statName}</b> ({cmp.bestSub.current}) — max : {cmp.maxBest}</p>
             <p>Nombre de runes meilleures : <b>{cmp.countBetterBest}</b></p>
-            <p>2ème substat : <b>{cmp.secondBestSub.statName}</b> ({cmp.secondBestSub.current}) — max : {cmp.maxSecond}</p>
-            <p>Nombre de runes meilleures sur les deux : <b>{cmp.countBetterBoth}</b></p>
+            {cmp.secondBestSub && (
+              <>
+                <p>2ème substat : <b>{cmp.secondBestSub.statName}</b> ({cmp.secondBestSub.current}) — max : {cmp.maxSecond}</p>
+                <p>Nombre de runes meilleures sur les deux : <b>{cmp.countBetterBoth}</b></p>
+              </>
+            )}
 
             {cmp.messages && cmp.messages.map((msg, i) => (
               <p key={i} style={{color: msg.includes("combinaison") ? "blue" : "green"}}>

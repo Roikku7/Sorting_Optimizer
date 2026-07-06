@@ -1,0 +1,9 @@
+node_modules/
+dist/
+release/
+src/la.obf.js
+
+# local data exports (player account data, analysis outputs)
+Roikku7-*.json
+sorting_rune*.json
+rune_sw.xlsx

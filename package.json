@@ -1,0 +1,64 @@
+{
+  "name": "sorting_optimizer",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "start": "electron .",
+    "vite:build": "vite build",
+    "obfuscate": "javascript-obfuscator src/logic_analyze.js --output src/la.obf.js --compact true --control-flow-flattening true",
+    "dist": "npm run obfuscate && vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.sw.sortingoptimizer",
+    "productName": "Account Optimizer",
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "package.json",
+      "src/la.obf.js",
+      "assets/icons/**/*",
+      "mapping.js"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/icons/",
+        "to": "assets/icons/"
+      }
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "icon": "assets/icone.ico",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.22",
+    "electron": "^39.2.4",
+    "electron-builder": "^24.13.3",
+    "javascript-obfuscator": "^4.2.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
+    "vite": "^7.2.6"
+  },
+  "dependencies": {
+    "@babel/standalone": "^7.28.5",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/vite": "^4.1.17",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

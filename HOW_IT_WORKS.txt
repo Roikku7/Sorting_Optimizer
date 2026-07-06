@@ -1,0 +1,112 @@
+=====================================================================
+ SORTING OPTIMIZER — HOW IT WORKS & HOW TO BUILD IT
+ (quick memory note — updated 2026-07-06)
+=====================================================================
+
+WHAT IT IS
+----------
+Electron desktop app that reads a Summoners War account export
+(JSON produced by SWEX) and scores every rune to tell you which
+ones are junk (sellable) and which are worth keeping.
+
+
+THE FILES THAT MATTER
+---------------------
+main.js               Electron MAIN process. Opens the window,
+                      owns the 4 IPC handlers (file picker, run
+                      analysis, load results, icon paths).
+preload.js            Security bridge. Exposes only those 4 IPC
+                      calls to the page as window.electronAPI.*
+src/logic_analyze.js  THE BRAIN. Pure Node/CommonJS. Reads the
+                      SWEX JSON, and for each rune reverse-
+                      engineers how many upgrade rolls each substat
+                      got ("detectProcsMethodA"), then computes
+                      "missPoints" = how far the rune is below its
+                      max potential. missPoints > threshold => junk.
+                      Also flags "reap" runes (good legendary
+                      innates on the right sets/slots).
+src/la.obf.js         OBFUSCATED copy of logic_analyze.js. This is
+                      what ships in the installer (npm run obfuscate
+                      regenerates it). If you edit logic_analyze.js,
+                      re-run the obfuscate script or the packaged
+                      app won't see your change.
+src/ui.jsx            React UI (renderer). File-pick button,
+                      filters (slot/set/quality/mainstat/substat),
+                      rune grid, detail modal with comparison.
+src/logic_rune.jsx    Filter / sort / "compare this rune to your
+                      other runes of same set+slot+mainstat" logic
+                      used by the UI.
+mapping.js            Big lookup table: set IDs -> names, stat type
+                      IDs -> names, grades, etc. Single source of
+                      truth for game data.
+index.html            Vite entry page, loads src/ui.jsx.
+assets/icons/*.png    Rune set icons used by the packaged app.
+icone/*.png           Same icons, served by Vite for browser-only dev.
+assets/icone.ico      App/installer icon.
+
+
+HOW DATA FLOWS
+--------------
+1. You click "Sélectionner un fichier JSON"
+   -> preload -> main.js 'select-json-file' -> native file dialog.
+2. main.js 'run-analysis' calls analyzeRunesFromFile(file)
+   (from la.obf.js) and writes the result to
+   %APPDATA%/sorting_optimizer/sorting_rune.json
+3. The UI loads that result ('load-sorted-runes') and renders the
+   grid. All filtering/sorting after that is pure UI, no IPC.
+
+Key scoring ideas:
+  - extra = rune quality: 1..5 normal, 11..15 ancient (5/15 = legend)
+  - missPoints = sum over substats of (max value it could have had
+    given its detected rolls) - (actual value)
+  - threshold = 8, +2 or +3 tolerance for good sets
+    (Violent/Will/Despair/Destroy/Nemesis)
+  - toJunk = missPoints > threshold
+
+
+HOW TO RUN IN DEV (2 terminals)
+-------------------------------
+  Terminal 1:   npm run dev        -> Vite dev server on :5173
+  Terminal 2:   npm start          -> Electron, loads localhost:5173
+
+  (Order matters: Vite first, then Electron.)
+  Test file to load: Roikku7-7294441.json (at project root).
+
+  GOTCHA (until the stabilization plan is applied): dev currently
+  loads la.obf.js, NOT logic_analyze.js — so edits to the analysis
+  logic need "npm run obfuscate" before you see them.
+
+
+HOW TO COMPILE THE ELECTRON APP (the installer)
+-----------------------------------------------
+  ONE COMMAND:
+
+      npm run dist
+
+  which does 3 things in a row:
+    1. npm run obfuscate   -> regenerates src/la.obf.js
+    2. vite build          -> bundles the UI into dist/
+    3. electron-builder    -> packages everything into a Windows
+                              installer
+
+  OUTPUT: "Account Optimizer Setup 1.0.0.exe"
+    - currently lands in dist/ (mixed with the Vite bundle)
+    - after the 2026-07-06 stabilization plan it lands in release/
+  A portable unpacked build sits next to it in win-unpacked/
+  (run "Account Optimizer.exe" directly from there to test without
+  installing).
+
+  If the build fails, first try: delete dist/ (and release/) and
+  re-run npm run dist.
+
+
+WHERE THE UPDATE PLAN IS
+------------------------
+  docs/superpowers/plans/2026-07-06-stabilize-electron-app.md
+  = step-by-step fixes for: broken quality filter, wrong ancient-
+  legendary scoring, modal crashes, dev icon paths, stale obfuscated
+  logic in dev, dead files (5MB Seal_files junk), build output
+  separation, unit tests (vitest).
+  REPORT.md = the full code review + long-term roadmap (efficiency
+  score, sell list, SWEX folder watch, live-drop overlay).
+=====================================================================

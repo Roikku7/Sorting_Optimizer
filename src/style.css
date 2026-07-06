@@ -1,0 +1,64 @@
+body {
+  font-family: Arial;
+  padding: 20px;
+  background: #1e1e1e;
+  color: white;
+}
+button {
+  background: #007acc;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+button:hover { background: #005fa3; }
+.card {
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+.bg-gray-300 { background: #555; }
+.bg-green-300 { background: #2e7d32; }
+.bg-sky-300 { background: #0288d1; }
+.bg-purple-300 { background: #6a1b9a; }
+.bg-amber-300 { background: #ff8f00; }
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: white;
+  color: black;
+  border-radius: 12px;
+  padding: 20px;
+  width: 400px;
+}
+.antique {
+  color: gold;
+  font-weight: bold;
+}
+.rune-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+}

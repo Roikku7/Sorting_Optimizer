@@ -132,7 +132,7 @@ function collectAllRunes(data) {
 function analyzeRune(rune) {
   const grade = rune.class;
   const isAncient = rune.extra >= 11 ? 1 : 0;
-  const procTotal = Math.max(0, rune.extra - 1);
+  const procTotal = Math.max(0, (rune.extra % 10) - 1); // extra 11–15 = ancient qualities
 
   let trackedSubs = [];
   let flatSubs = [];
@@ -174,8 +174,8 @@ function analyzeRune(rune) {
 
     // Non-gem → miss via heroic pour légendaires, sinon calcul standard
     let miss;
-    if (rune.extra === 5) {
-      const heroicMax = heroicExpectedMax(type, result.assigned, grade);
+    if (rune.extra === 5 || rune.extra === 15) {
+      const heroicMax = heroicExpectedMax(type, result.assigned, grade, isAncient);
       miss = Math.max(0, heroicMax - currentValue);
     } else {
       miss = calculateMissPoints(

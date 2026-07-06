@@ -7,7 +7,24 @@
       "Bash(node -e \"const m=require\\('./mapping.js'\\); console.log\\(Object.keys\\(m.rune\\)\\); console.log\\(JSON.stringify\\(m.rune.substat?.[8],null,1\\)\\); console.log\\(m.rune.effectTypes[8], m.rune.sets[13], m.rune.sets[4]\\);\")",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -m \"chore: baseline before stabilization work\" -q)"
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -m \"chore: baseline before stabilization work\" -q)",
+      "Bash(grep -v \"^$\")",
+      "Bash(npm test *)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"test: add vitest harness with smoke test\")",
+      "Bash(npx vitest *)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"test: expose ancient-legendary missPoints and procTotal bugs\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"fix: ancient legendary runes use heroic cap and correct proc count\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"fix: quality filter handles comma-separated values like 5,15\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"fix: null-guard modal comparison and filters against sparse runes\")",
+      "Bash(awk '{print $NF, $5\"b\"}')",
+      "Bash(node --check main.js)",
+      "Bash(node -e \"const {analyzeRunesFromFile}=require\\('./src/logic_analyze.js'\\); const r=analyzeRunesFromFile\\('./Roikku7-7294441.json'\\); console.log\\('analyzed', r.length, 'runes; sample:', JSON.stringify\\({slot:r[0].slot,set:r[0].set_name,miss:r[0].missPoints,ancient:r[0].isAncient}\\)\\);\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"fix: dev-mode icon paths and un-obfuscated logic loading\")",
+      "Bash(node --check preload.js)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"refactor: return analysis results over IPC instead of disk round-trip\")",
+      "Bash(node -e \"require\\('./package.json'\\)\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"chore: remove dead files and 5MB of saved-webpage junk from the installer\")",
+      "Bash(git rm *)"
     ]
   }
 }

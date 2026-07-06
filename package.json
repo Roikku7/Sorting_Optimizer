@@ -19,7 +19,6 @@
       "preload.js",
       "package.json",
       "src/la.obf.js",
-      "assets/icons/**/*",
       "mapping.js"
     ],
     "extraResources": [

@@ -24,7 +24,15 @@
       "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"refactor: return analysis results over IPC instead of disk round-trip\")",
       "Bash(node -e \"require\\('./package.json'\\)\")",
       "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"chore: remove dead files and 5MB of saved-webpage junk from the installer\")",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(rm -rf dist)",
+      "Bash(npm run *)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"build: separate electron-builder output \\(release/\\) from vite bundle \\(dist/\\)\")",
+      "Bash(npx vite *)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"perf: preload set icons in parallel over unique sets only\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"docs: update HOW_IT_WORKS note to reflect applied fixes\")",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" add .claude/settings.local.json)",
+      "Bash(git -c user.name=\"Roikku7\" -c user.email=\"lokick17@gmail.com\" commit -q -m \"chore: session settings\")"
     ]
   }
 }

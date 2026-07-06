@@ -239,8 +239,7 @@ export function App() {
     if (!filePath) return; 
     setFile(filePath);
 
-    await window.electronAPI.runAnalysis(filePath);
-    const analyzedRunes = await window.electronAPI.loadSortedRunes();
+    const analyzedRunes = await window.electronAPI.runAnalysis(filePath);
     setRunes(analyzedRunes);
   }
 

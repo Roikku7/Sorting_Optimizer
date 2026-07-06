@@ -62,30 +62,13 @@ ipcMain.handle("run-analysis", async (event, inputFile) => {
   try {
     const results = analyzeRunesFromFile(inputFile);
 
-    // Sauvegarde du JSON de sortie
+    // Export de debug (facultatif, non lu par l'app)
     const outputFile = path.join(app.getPath("userData"), "sorting_rune.json");
     fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
 
-    return outputFile; // renvoie le chemin du fichier
+    return results;
   } catch (err) {
     console.error("Erreur analyse:", err);
     throw new Error("Analyse échouée");
-  }
-});
-
-// ---------------------------------------------------
-// IPC — Charger sorting_rune.json dans l’UI
-// ---------------------------------------------------
-ipcMain.handle("load-sorted-runes", async () => {
-  try {
-    const outputFile = path.join(app.getPath("userData"), "sorting_rune.json");
-    if (!fs.existsSync(outputFile)) {
-      throw new Error("Fichier d'analyse introuvable");
-    }
-    const raw = fs.readFileSync(outputFile, "utf8");
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error("Erreur lecture:", err);
-    throw err;
   }
 });

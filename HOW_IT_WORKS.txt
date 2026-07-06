@@ -1,6 +1,8 @@
 =====================================================================
  SORTING OPTIMIZER — HOW IT WORKS & HOW TO BUILD IT
- (quick memory note — updated 2026-07-06)
+ (quick memory note — updated 2026-07-07)
+ Stabilization plan executed & verified: npm run dist produces a
+ working release/ installer with rune icons rendering correctly.
 =====================================================================
 
 WHAT IT IS

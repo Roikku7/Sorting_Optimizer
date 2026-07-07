@@ -5,7 +5,7 @@ Statut : validé par l'utilisateur (sections A/B/C approuvées)
 
 ## Problème
 
-L'app note aujourd'hui chaque rune isolément (`missPoints` = qualité des rolls) mais :
+L'app note aujourd'hui chaque rune isolément (`missPoints` = qualité des rolls) mais par exemple :
 
 1. Elle ignore la **pertinence des substats selon le set** (une Rage avec de gros
    rolls RES est gardée alors que la RES n'y sert à rien ; à l'inverse la RES est
@@ -113,6 +113,17 @@ N par défaut par set (réglable) :
    Surcharges possibles par slot et par set dans les réglages.
 2. **Reap** : `reap === 1` (légendaire + bon innate, flag existant) → jamais
    `JUNK` (la rune mérite d'être jugée à +12).
+3. **Quad roll (broken set)** : une substat trackée avec
+   `assignedProcs ≥ 4` (base + 4 rolls concentrés, ex: RES ~36-40%) →
+   jamais `JUNK` ni `SELL`, même si la stat est USELESS pour le set. Ces
+   runes valent par leurs stats brutes dans les builds « broken set » (on
+   sacrifie l'effet de set pour de meilleures stats). Flag `brokenSet: true`
+   sur la rune.
+
+Transparence : une exception ne masque jamais l'état objectif de la rune.
+Le verdict devient protecteur (`KEEP`/`A_MONTER`) mais l'UI affiche toujours
+le rang réel dans le groupe, le score, les wastePoints et la raison de la
+protection (badge « SPD », « REAP » ou « BROKEN SET »).
 
 ## 6. Réglages persistés
 
@@ -129,8 +140,10 @@ N par défaut par set (réglable) :
 ## 7. UI (src/ui.jsx, src/logic_rune.jsx)
 
 - **Grille** : badge verdict coloré (JUNK rouge, A_MONTER jaune, SELL orange,
-  KEEP vert) + « rang/groupe » (ex: 2/14) pour les runes ≥+12 ; filtre par
-  verdict ; tri par score.
+  KEEP vert) + « rang/groupe » (ex: 2/14) pour les runes ≥+12 ; badge
+  d'exception (« SPD » / « REAP » / « BROKEN SET ») à côté du verdict quand
+  une protection s'applique — le rang et le score objectifs restent
+  affichés ; filtre par verdict ; tri par score.
 - **Modal** : remplace `getRuneComparison` (top-1/top-2 substats) par le
   classement complet du groupe : liste triée par score, rune courante
   surlignée, et détail « procs gaspillés » par substat USELESS.
@@ -182,7 +195,8 @@ Découverts pendant l'exploration — les IDs de sets codés dans
 - Groupement hybride : slot 2 séparé par mainstat, slot 3 non.
 - Verdicts : les 4 cas + frontière rank = N.
 - Exceptions : SPD 20 sauve une rune SELL ; reap sauve du JUNK ; seuil
-  surchargé par set.
+  surchargé par set ; quad roll (4 procs dans une stat USELESS) sauve du
+  JUNK/SELL avec flag brokenSet, et le rang objectif reste calculé.
 - Corrections d'IDs : tolérance appliquée à Will (15) et plus à Rage (5).
 - Fusion réglages : surcharge partielle + reset.
 - Les 9 tests existants continuent de passer (le calcul missPoints

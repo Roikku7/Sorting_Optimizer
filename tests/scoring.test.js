@@ -54,6 +54,14 @@ describe("wastePoints — procs in USELESS substats", () => {
     expect(r.toJunk).toBe(true);
   });
 
+  it("a low-rolled USELESS substat is not double-penalized (waste only)", () => {
+    // RES 20 sur Rage : assigned 2, miss 4, waste 16 → missPoints doit exclure le miss
+    const r = analyzeOne(makeRune({ sec_eff: [[11, 20, 0, 0]] }));
+    expect(r.wastePoints).toBe(16);
+    expect(r.missPoints).toBe(0);
+    expect(r.breakdown.find(s => s.type === 11).miss).toBe(4); // info objective conservée
+  });
+
   it("settings can override relevance (ACC useless on Rage)", () => {
     const settings = { relevance: { 5: { 12: "USELESS" } }, keepCount: {}, spdThreshold: { global: 20, bySet: {}, bySlot: {} } };
     // ACC 24 : assigned 2 → waste 16
@@ -73,6 +81,11 @@ describe("brokenSet — quad roll detection", () => {
 
   it("does not flag 2 procs", () => {
     const r = analyzeOne(makeRune({ sec_eff: [[11, 24, 0, 0]] }));
+    expect(r.brokenSet).toBe(false);
+  });
+
+  it("a gemmed substat never triggers brokenSet", () => {
+    const r = analyzeOne(makeRune({ extra: 5, sec_eff: [[11, 40, 1, 0]] }));
     expect(r.brokenSet).toBe(false);
   });
 });

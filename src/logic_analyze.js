@@ -223,9 +223,10 @@ function analyzeRune(rune, settings) {
   }
 
   const procAssignedDetected = trackedSubs.reduce((s, x) => s + x.assignedProcs, 0);
-  const missPoints = trackedSubs.reduce((s, x) => s + x.miss, 0);
+  const missPoints = trackedSubs.reduce(
+    (s, x) => s + (x.relevance === "USELESS" ? 0 : x.miss), 0);
   const wastePoints = trackedSubs.reduce((s, x) => s + (x.waste || 0), 0);
-  const brokenSet = trackedSubs.some(x => x.assignedProcs >= 4);
+  const brokenSet = trackedSubs.some(x => !x.gemmed && x.assignedProcs >= 4);
 
   const mainstat = rune.pri_eff
     ? {

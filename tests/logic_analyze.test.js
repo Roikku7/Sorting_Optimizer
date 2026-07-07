@@ -68,4 +68,19 @@ describe("set id fixes (SET_TOLERANCE / REAP aligned on mapping.rune.sets)", () 
     const r = analyzeOne(makeRune({ set_id: 24, slot_no: 2, extra: 5, prefix_eff: [12, 7] }));
     expect(r.reap).toBe(1);
   });
+
+  it("Destroy (18) gets the +2 tolerance (threshold 10)", () => {
+    const r = analyzeOne(makeRune({ set_id: 18 }));
+    expect(r.threshold).toBe(10);
+  });
+
+  it("Shield (16) gets NO tolerance (threshold 8)", () => {
+    const r = analyzeOne(makeRune({ set_id: 16 }));
+    expect(r.threshold).toBe(8);
+  });
+
+  it("legendary Guard (2) slot 2 with CRate 5 innate is NOT reap-eligible", () => {
+    const r = analyzeOne(makeRune({ set_id: 2, slot_no: 2, extra: 5, prefix_eff: [9, 5] }));
+    expect(r.reap).toBe(0);
+  });
 });

@@ -54,7 +54,8 @@ export function getGroupRanking(selectedRune, data) {
 
   const members = data
     .filter(r => r.groupKey === selectedRune.groupKey && r.rune_lvl >= 12)
-    .sort((a, b) => b.score - a.score);
+    // même départage que rankRunes (logic_analyze) pour un ordre identique aux rangs
+    .sort((a, b) => b.score - a.score || a.rune_id - b.rune_id);
 
   const pendingCount = data.filter(
     r => r.groupKey === selectedRune.groupKey && r.rune_lvl < 12

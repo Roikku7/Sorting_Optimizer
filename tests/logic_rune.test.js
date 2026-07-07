@@ -88,4 +88,11 @@ describe("getGroupRanking", () => {
   it("returns null without a selected rune", () => {
     expect(getGroupRanking(null, [])).toBeNull();
   });
+
+  it("tie-breaks equal scores by rune_id like rankRunes", () => {
+    const a = makeAnalyzed({ rune_id: 7, score: 3 });
+    const b = makeAnalyzed({ rune_id: 2, score: 3 });
+    const out = getGroupRanking(a, [a, b]); // a inséré avant b exprès
+    expect(out.members.map(r => r.rune_id)).toEqual([2, 7]);
+  });
 });

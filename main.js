@@ -77,7 +77,12 @@ ipcMain.handle("get-settings", async () => loadSettings());
 
 ipcMain.handle("save-settings", async (event, raw) => {
   const clean = sanitizeSettings(raw);
-  fs.writeFileSync(settingsFile(), JSON.stringify(clean, null, 2));
+  try {
+    fs.writeFileSync(settingsFile(), JSON.stringify(clean, null, 2));
+  } catch (err) {
+    console.error("Erreur sauvegarde réglages:", err);
+    throw new Error("Sauvegarde des réglages échouée");
+  }
   return clean;
 });
 

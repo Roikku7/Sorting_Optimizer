@@ -536,11 +536,14 @@ Et le push non-gemmé (après le calcul de `miss`) devient :
     });
 ```
 
-3d. Après le calcul de `missPoints`, ajouter :
+3d. Remplacer le calcul de `missPoints` (pas de double pénalité : le waste
+REMPLACE le miss pour les substats USELESS) et ajouter waste/brokenSet :
 
 ```js
+  const missPoints = trackedSubs.reduce(
+    (s, x) => s + (x.relevance === "USELESS" ? 0 : x.miss), 0);
   const wastePoints = trackedSubs.reduce((s, x) => s + (x.waste || 0), 0);
-  const brokenSet = trackedSubs.some(x => x.assignedProcs >= 4);
+  const brokenSet = trackedSubs.some(x => !x.gemmed && x.assignedProcs >= 4);
 ```
 
 3e. Dans l'objet retourné par `analyzeRune`, ajouter les champs et corriger `toJunk` :

@@ -68,8 +68,14 @@ Dans `logic_analyze.js`, en plus de `missPoints` :
 - `wastePoints = Σ waste`.
 - Verdict qualité : `JUNK` si `missPoints + wastePoints > threshold`
   (threshold existant : 8 + tolérance de set).
+- **Pas de double pénalité** : pour une substat USELESS, le waste REMPLACE
+  le miss — `missPoints` n'additionne que les miss des substats non-USELESS
+  (un mauvais roll dans une stat inutile n'est pas pire qu'un bon roll ;
+  le `miss` par substat reste calculé et affiché à titre informatif).
 - Les substats gemmées gardent `miss = 0` mais une gemme posée dans une stat
   USELESS compte quand même en waste (1 proc équivalent) — cas rare.
+- `brokenSet` ignore les substats gemmées (la valeur d'une gemme ne vient
+  pas de procs).
 
 ## 3. Score de comparaison (runes ≥+12)
 

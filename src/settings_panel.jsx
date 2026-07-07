@@ -3,8 +3,7 @@
 // N runes à garder par set, seuil SPD global.
 // Les valeurs affichées = défauts de mapping fusionnés avec les surcharges.
 import React, { useState, useEffect } from "react";
-import * as mappingNs from "../mapping.js";
-const mapping = mappingNs.default || mappingNs;
+import mapping from "../mapping.js";
 
 const TRACKED = [2, 4, 6, 8, 9, 10, 11, 12];
 const LEVEL_CYCLE = { KEY: "NEUTRAL", NEUTRAL: "USELESS", USELESS: "KEY" };

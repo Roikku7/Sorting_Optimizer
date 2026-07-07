@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { filterRunes, sortRunes, getGroupRanking } from "./logic_rune.jsx";
+import { SettingsPanel } from "./settings_panel.jsx";
 import "./style.css";
 
 const VERDICT_STYLE = {
@@ -293,15 +294,18 @@ export function RuneViewer({ data }) {
 export function App() {
   const [file, setFile] = useState(null);
   const [runes, setRunes] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
 
   async function selectFile() {
-    
     const filePath = await window.electronAPI.selectJsonFile();
-    if (!filePath) return; 
+    if (!filePath) return;
     setFile(filePath);
+    setRunes(await window.electronAPI.runAnalysis(filePath));
+  }
 
-    const analyzedRunes = await window.electronAPI.runAnalysis(filePath);
-    setRunes(analyzedRunes);
+  // Après sauvegarde des réglages : re-analyser le fichier courant
+  async function onSettingsSaved() {
+    if (file) setRunes(await window.electronAPI.runAnalysis(file));
   }
 
   return (
@@ -312,8 +316,15 @@ export function App() {
       <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={selectFile}>
         Sélectionner un fichier JSON
       </button>
+      <button className="px-4 py-2 bg-gray-600 text-white rounded" style={{marginLeft:"8px"}}
+              onClick={() => setShowSettings(true)}>
+        ⚙️ Réglages
+      </button>
       {file && <p className="mt-2">Fichier sélectionné : {file}</p>}
       {runes.length > 0 && <RuneViewer data={runes} />}
+      {showSettings && (
+        <SettingsPanel onClose={() => setShowSettings(false)} onSaved={onSettingsSaved} />
+      )}
     </div>
   );
 }

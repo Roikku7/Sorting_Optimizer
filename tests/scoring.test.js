@@ -89,3 +89,32 @@ describe("brokenSet — quad roll detection", () => {
     expect(r.brokenSet).toBe(false);
   });
 });
+
+describe("score — normalized, set-weighted", () => {
+  it("normalizes across stats: 21 SPD outweighs 13 HP% (same NEUTRAL/KEY context)", () => {
+    // Sur Will (15) : SPD est KEY (x1.25), HP% NEUTRAL (x1.0)
+    const spdRune = analyzeOne(makeRune({ set_id: 15, sec_eff: [[8, 21, 0, 0]] }));
+    const hpRune = analyzeOne(makeRune({ set_id: 15, sec_eff: [[2, 13, 0, 0]] }));
+    // SPD: (21/6)*1.25 = 4.38 ; HP%: (13/8)*1.0 = 1.63
+    expect(spdRune.score).toBeGreaterThan(hpRune.score);
+    expect(spdRune.score).toBeCloseTo(4.38, 2);
+    expect(hpRune.score).toBeCloseTo(1.63, 2);
+  });
+
+  it("USELESS stats contribute zero", () => {
+    // RES 24 sur Rage → poids 0
+    const r = analyzeOne(makeRune({ sec_eff: [[11, 24, 0, 0]] }));
+    expect(r.score).toBe(0);
+  });
+
+  it("tracked innate counts at half weight", () => {
+    // Innate CDmg 7 sur Rage (KEY x1.25) : (7/7)*1.25*0.5 = 0.63
+    const r = analyzeOne(makeRune({ prefix_eff: [10, 7] }));
+    expect(r.score).toBeCloseTo(0.63, 2);
+  });
+
+  it("flat substats and flat innates are ignored", () => {
+    const r = analyzeOne(makeRune({ prefix_eff: [3, 20], sec_eff: [[1, 300, 0, 0]] }));
+    expect(r.score).toBe(0);
+  });
+});

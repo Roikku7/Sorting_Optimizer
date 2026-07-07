@@ -46,6 +46,21 @@ function getRelevance(setId, type, settings) {
   return "NEUTRAL";
 }
 
+// Score de comparaison d'une rune : substats normalisées par la valeur max
+// d'un proc, pondérées par la pertinence du set. L'innate compte à 50 %.
+function computeScore(trackedSubs, innate, setId, settings) {
+  let score = 0;
+  for (const s of trackedSubs) {
+    const weight = SCORING.RELEVANCE_WEIGHTS[getRelevance(setId, s.type, settings)];
+    score += (s.current / SCORING.ROLL_MAX[s.type]) * weight;
+  }
+  if (innate && SCORING.ROLL_MAX[innate.type]) {
+    const weight = SCORING.RELEVANCE_WEIGHTS[getRelevance(setId, innate.type, settings)];
+    score += (innate.value / SCORING.ROLL_MAX[innate.type]) * weight * 0.5;
+  }
+  return Math.round(score * 100) / 100;
+}
+
 function heroicExpectedMax(type, assigned, grade, isAncient) {
   const { baseMin, baseMax, procMin, procMax } =
     getBaseAndProcValues(type, grade, isAncient);
@@ -298,6 +313,7 @@ function analyzeRune(rune, settings) {
     procAssignedDetected,
     missPoints,
     wastePoints,
+    score: computeScore(trackedSubs, innate, rune.set_id, settings),
     brokenSet,
     threshold,
     toJunk: missPoints + wastePoints > threshold,
@@ -318,4 +334,4 @@ function analyzeRunesFromData(data, settings) {
   return runes.map(r => analyzeRune(r, settings));
 }
 
-module.exports = { analyzeRunesFromFile, analyzeRunesFromData };
+module.exports = { analyzeRunesFromFile, analyzeRunesFromData, computeScore };

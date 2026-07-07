@@ -35,6 +35,12 @@ describe("sanitizeSettings", () => {
     expect(s.keepCount).toEqual({ 13: 8 });
   });
 
+  it("does not pollute Object.prototype via __proto__ keys", () => {
+    sanitizeSettings(JSON.parse('{"relevance":{"__proto__":{"12":"USELESS"}}}'));
+    expect({}[12]).toBeUndefined();
+    expect(Object.prototype[12]).toBeUndefined();
+  });
+
   it("sanitizes spd thresholds (numbers only, keeps overrides)", () => {
     const s = sanitizeSettings({
       spdThreshold: { global: 22, bySet: { 5: 24, 4: "x" }, bySlot: { 2: 18 } },

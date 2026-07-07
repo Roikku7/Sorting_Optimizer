@@ -24,6 +24,7 @@ function sanitizeSettings(raw) {
 
   if (raw.relevance && typeof raw.relevance === "object") {
     for (const [setId, subs] of Object.entries(raw.relevance)) {
+      if (setId === "__proto__" || setId === "constructor" || setId === "prototype") continue;
       if (!subs || typeof subs !== "object") continue;
       for (const [type, level] of Object.entries(subs)) {
         if (!LEVELS.includes(level)) continue;

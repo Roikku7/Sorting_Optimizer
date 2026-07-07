@@ -321,17 +321,89 @@ function analyzeRune(rune, settings) {
   };
 }
 
+// ------------------ CLASSEMENT PAR GROUPE & VERDICTS ------------------
+// Groupe de remplacement réel : slots 2/4/6 → set+slot+mainstat,
+// slots 1/3/5 → set+slot.
+function groupKeyOf(r) {
+  return [2, 4, 6].includes(r.slot)
+    ? `${r.set_id}|${r.slot}|${r.mainstat ? r.mainstat.type : "?"}`
+    : `${r.set_id}|${r.slot}`;
+}
+
+function keepCountOf(setId, settings) {
+  return settings?.keepCount?.[setId]
+    ?? SCORING.KEEP_COUNT_DEFAULTS[setId]
+    ?? SCORING.KEEP_COUNT_FALLBACK;
+}
+
+function spdThresholdOf(rune, settings) {
+  const t = settings?.spdThreshold || {};
+  return t.bySet?.[rune.set_id]
+    ?? t.bySlot?.[rune.slot]
+    ?? t.global
+    ?? SCORING.SPD_THRESHOLD_DEFAULT;
+}
+
+// Mutations en place : ajoute groupKey, rank, groupSize, verdict, protection.
+// Une exception protège la rune (verdict) mais ne masque jamais son état
+// objectif (rank / score / wastePoints restent calculés tels quels).
+function rankRunes(runes, settings) {
+  const groups = new Map();
+  for (const r of runes) {
+    r.groupKey = groupKeyOf(r);
+    if (!groups.has(r.groupKey)) groups.set(r.groupKey, []);
+    if (r.rune_lvl >= 12) groups.get(r.groupKey).push(r);
+  }
+
+  for (const members of groups.values()) {
+    members.sort((a, b) => b.score - a.score || a.rune_id - b.rune_id);
+    members.forEach((r, i) => {
+      r.rank = i + 1;
+      r.groupSize = members.length;
+    });
+  }
+
+  for (const r of runes) {
+    if (r.rune_lvl < 12) {
+      r.rank = null;
+      r.groupSize = groups.get(r.groupKey).length;
+      r.verdict = r.toJunk ? "JUNK" : "A_MONTER";
+    } else {
+      r.verdict = r.rank <= keepCountOf(r.set_id, settings) ? "KEEP" : "SELL";
+    }
+
+    // Exceptions — priorité : SPD > REAP > BROKEN_SET
+    const spdSub = r.breakdown.find(s => s.type === 8);
+    const spdValue = spdSub ? spdSub.current : 0;
+    r.protection = null;
+    if (spdValue >= spdThresholdOf(r, settings) && (r.verdict === "JUNK" || r.verdict === "SELL")) {
+      r.protection = "SPD";
+    } else if (r.reap === 1 && r.verdict === "JUNK") {
+      r.protection = "REAP";
+    } else if (r.brokenSet && (r.verdict === "JUNK" || r.verdict === "SELL")) {
+      r.protection = "BROKEN_SET";
+    }
+    if (r.protection) {
+      if (r.verdict === "JUNK") r.verdict = "A_MONTER";
+      // REAP ne protège que du JUNK (la rune sera jugée à +12)
+      if (r.verdict === "SELL" && r.protection !== "REAP") r.verdict = "KEEP";
+    }
+  }
+
+  return runes;
+}
+
 // ------------------ EXPORTS ------------------
 function analyzeRunesFromFile(inputFile, settings) {
   const raw = fs.readFileSync(inputFile, "utf8");
   const data = JSON.parse(raw);
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r, settings));
+  return rankRunes(runes.map(r => analyzeRune(r, settings)), settings);
 }
 
 function analyzeRunesFromData(data, settings) {
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r, settings));
+  return rankRunes(runes.map(r => analyzeRune(r, settings)), settings);
 }
 
-module.exports = { analyzeRunesFromFile, analyzeRunesFromData, computeScore };
+module.exports = { analyzeRunesFromFile, analyzeRunesFromData, computeScore, rankRunes };

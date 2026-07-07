@@ -16,6 +16,7 @@ export function filterRunes(data, filters, showReapOnly) {
       const hasStat = r.breakdown.some(s => s.statName === filters.substat);
       if (!hasStat) return false;
     }
+    if (filters.verdict && r.verdict !== filters.verdict) return false;
     return true;
   });
 }
@@ -37,6 +38,8 @@ export function sortRunes(data, filters, sortKey) {
   } else {
     if (sortKey === "missPoints") {
       sorted.sort((a, b) => b.missPoints - a.missPoints);
+    } else if (sortKey === "score") {
+      sorted.sort((a, b) => b.score - a.score);
     }
   }
 
@@ -44,66 +47,18 @@ export function sortRunes(data, filters, sortKey) {
 }
 
 // -----------------------------
-// Comparaison d’une rune
+// Classement du groupe d’une rune (mêmes runes de remplacement)
 // -----------------------------
-export function getRuneComparison(selectedRune, data) {
+export function getGroupRanking(selectedRune, data) {
   if (!selectedRune) return null;
 
-  const nonFlatSubs = selectedRune.breakdown.filter(s => !s.statName.includes("flat"));
-  const sortedSubs = [...nonFlatSubs].sort((a,b)=> b.current - a.current);
-  const bestSub = sortedSubs[0];
-  const secondBestSub = sortedSubs[1] ?? null;
+  const members = data
+    .filter(r => r.groupKey === selectedRune.groupKey && r.rune_lvl >= 12)
+    .sort((a, b) => b.score - a.score);
 
-  if (!bestSub) return null;
+  const pendingCount = data.filter(
+    r => r.groupKey === selectedRune.groupKey && r.rune_lvl < 12
+  ).length;
 
-  const sameSetSlotMain = data.filter(r =>
-    r.set_name === selectedRune.set_name &&
-    r.slot === selectedRune.slot &&
-    r.mainstat?.statName === selectedRune.mainstat?.statName
-  );
-
-  const maxBest = Math.max(...sameSetSlotMain.map(r => {
-    const stat = r.breakdown.find(s => s.statName === bestSub.statName);
-    return stat ? stat.current : 0;
-  }));
-
-  const countBetterBest = sameSetSlotMain.filter(r => {
-    if (r.rune_id === selectedRune.rune_id) return false;
-    const stat1 = r.breakdown.find(s => s.statName === bestSub.statName);
-    return stat1 && stat1.current >= bestSub.current;
-  }).length;
-
-  const maxSecond = secondBestSub
-    ? Math.max(...sameSetSlotMain.map(r => {
-        const stat = r.breakdown.find(s => s.statName === secondBestSub.statName);
-        return stat ? stat.current : 0;
-      }))
-    : null;
-
-  const countBetterBoth = secondBestSub
-    ? sameSetSlotMain.filter(r => {
-        if (r.rune_id === selectedRune.rune_id) return false;
-        const stat1 = r.breakdown.find(s => s.statName === bestSub.statName);
-        const stat2 = r.breakdown.find(s => s.statName === secondBestSub.statName);
-        return stat1 && stat2 && stat1.current >= bestSub.current && stat2.current >= secondBestSub.current;
-      }).length
-    : null;
-
-  const messages = [];
-  if (countBetterBest === 0) {
-    messages.push(`C’est la meilleure rune sur sa substat principale (${bestSub.statName}) !`);
-  }
-  if (secondBestSub && countBetterBoth === 0) {
-    messages.push(`C’est la meilleure combinaison sur ${bestSub.statName} + ${secondBestSub.statName} !`);
-  }
-
-  return {
-    bestSub,
-    secondBestSub,
-    maxBest,
-    countBetterBest,
-    maxSecond,
-    countBetterBoth,
-    messages: messages || []
-  };
+  return { members, pendingCount };
 }

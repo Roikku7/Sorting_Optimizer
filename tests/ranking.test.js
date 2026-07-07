@@ -140,6 +140,26 @@ describe("exceptions (objective state preserved)", () => {
     expect(out[0].protection).toBe("REAP");
   });
 
+  it("a KEEP rune with high SPD gets protection null (protection only when it rescues)", () => {
+    const out = analyze([makeRune({ sec_eff: [[8, 21, 0, 0]] })]);
+    expect(out[0].verdict).toBe("KEEP");
+    expect(out[0].protection).toBeNull();
+  });
+
+  it("spdThreshold bySlot applies when bySet is absent", () => {
+    const settings = {
+      relevance: {}, keepCount: { 5: 1 },
+      spdThreshold: { global: 20, bySet: {}, bySlot: { 2: 25 } },
+    };
+    const out = analyze([
+      makeRune({ sec_eff: [[10, 28, 0, 0], [9, 24, 0, 0]] }),
+      makeRune({ sec_eff: [[8, 21, 0, 0]] }), // 21 < 25 (slot 2) → pas protégée
+    ], settings);
+    const weak = out.find(r => r.rank === 2);
+    expect(weak.verdict).toBe("SELL");
+    expect(weak.protection).toBeNull();
+  });
+
   it("quad roll (brokenSet) rescues JUNK and SELL", () => {
     // extra 5 obligatoire : seul un légendaire (procTotal 4) peut quad-roller.
     // RES 40 = 4 procs sur Rage : wastePoints 32 → JUNK sans exception

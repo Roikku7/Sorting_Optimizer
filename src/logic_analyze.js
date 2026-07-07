@@ -366,6 +366,7 @@ function rankRunes(runes, settings) {
   for (const r of runes) {
     if (r.rune_lvl < 12) {
       r.rank = null;
+      // groupSize = nb de concurrentes >= +12 (peut être 0 pour une rune en attente)
       r.groupSize = groups.get(r.groupKey).length;
       r.verdict = r.toJunk ? "JUNK" : "A_MONTER";
     } else {
@@ -373,7 +374,10 @@ function rankRunes(runes, settings) {
     }
 
     // Exceptions — priorité : SPD > REAP > BROKEN_SET
-    const spdSub = r.breakdown.find(s => s.type === 8);
+    // NB : rankRunes attend des runes issues d'analyzeRune (breakdown, score…).
+    // Seules les substats comptent pour la protection SPD (pas l'innate,
+    // dont les rolls sont trop faibles pour atteindre le seuil).
+    const spdSub = (r.breakdown || []).find(s => s.type === 8);
     const spdValue = spdSub ? spdSub.current : 0;
     r.protection = null;
     if (spdValue >= spdThresholdOf(r, settings) && (r.verdict === "JUNK" || r.verdict === "SELL")) {

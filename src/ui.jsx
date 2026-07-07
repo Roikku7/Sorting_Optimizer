@@ -4,23 +4,69 @@
 // -----------------------------
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import { filterRunes, sortRunes, getRuneComparison } from "./logic_rune.jsx";
-import "./style.css"; 
+import { filterRunes, sortRunes, getGroupRanking } from "./logic_rune.jsx";
+import { SettingsPanel } from "./settings_panel.jsx";
+import "./style.css";
+
+const VERDICT_STYLE = {
+  JUNK:     { label: "JUNK",     background: "#e53935", color: "white" },
+  A_MONTER: { label: "À MONTER", background: "#fbc02d", color: "black" },
+  SELL:     { label: "SELL",     background: "#fb8c00", color: "white" },
+  KEEP:     { label: "KEEP",     background: "#43a047", color: "white" },
+};
+
+const PROTECTION_LABEL = {
+  SPD: "⚡ SPD",
+  REAP: "REAP",
+  BROKEN_SET: "BROKEN SET",
+};
+
+function VerdictBadge({ rune }) {
+  const v = VERDICT_STYLE[rune.verdict];
+  if (!v) return null;
+  return (
+    <span style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
+      <span style={{
+        background: v.background, color: v.color, borderRadius: "4px",
+        padding: "1px 6px", fontSize: "0.75rem", fontWeight: "bold",
+      }}>
+        {v.label}
+      </span>
+      {rune.protection && (
+        <span style={{
+          background: "#5e35b1", color: "white", borderRadius: "4px",
+          padding: "1px 6px", fontSize: "0.7rem",
+        }}>
+          {PROTECTION_LABEL[rune.protection]}
+        </span>
+      )}
+      {rune.rank != null && (
+        <span style={{ fontSize: "0.75rem", color: "#555" }}>
+          {rune.rank}/{rune.groupSize}
+        </span>
+      )}
+    </span>
+  );
+}
 
 function RuneModal({ rune, data, onClose, icons }) {
-  if (!rune) return null;
-
-  const cmp = getRuneComparison(rune, data);
+  // Hooks toujours appelés avant l'early return (Rules of Hooks :
+  // le nombre de hooks ne doit pas changer quand rune passe de null à objet)
   const [iconPath, setIconPath] = useState("");
-  
+
   useEffect(() => {
+    if (!rune) return;
     if (window.electronAPI?.getIconPath) {
       window.electronAPI.getIconPath(rune.set_name).then(setIconPath);
     } else {
       // fallback en dev : Vite sert /public/icone/
       setIconPath(`/icone/${rune.set_name}.png`);
     }
-  }, [rune.set_name]);
+  }, [rune?.set_name]);
+
+  if (!rune) return null;
+
+  const ranking = getGroupRanking(rune, data);
 
   return (
     <div className="modal" onClick={onClose}>
@@ -30,7 +76,13 @@ function RuneModal({ rune, data, onClose, icons }) {
 
         <p><b>Main Stat:</b> {rune.mainstat?.statName} {rune.mainstat?.value}</p>
         <p><b>Niveau:</b> {rune.rune_lvl}</p>
-        <p><b>MissPoints:</b> {rune.missPoints} / {rune.threshold}</p>
+        <p><b>Verdict:</b> <VerdictBadge rune={rune} /></p>
+        {rune.wastePoints > 0 && (
+          <p style={{color:"#b71c1c"}}>
+            <b>{rune.wastePoints} points gaspillés</b> dans des substats inutiles pour ce set
+          </p>
+        )}
+        <p><b>MissPoints:</b> {rune.missPoints}{rune.wastePoints > 0 && ` + ${rune.wastePoints} gaspillés`} / {rune.threshold}</p>
         <p><b>Qualité:</b> {rune.extra}</p>
         {rune.isAncient === 1 && <p style={{color:"gold"}}>✨ Rune Antique</p>}
         {rune.innate && (
@@ -44,31 +96,28 @@ function RuneModal({ rune, data, onClose, icons }) {
 
         <div>
           {rune.breakdown.map((s,i)=>(
-            <p key={i}>
+            <p key={i} style={s.relevance === "USELESS" ? { opacity: 0.55 } : {}}>
               <b>{s.statName}</b>: {s.current}
-              {!s.statName.includes("flat") && (
-                <span style={{color:"red"}}>(miss {s.miss})</span>
-              )}
+              {s.relevance === "USELESS" && <span style={{color:"#b71c1c"}}> (inutile sur ce set{s.waste > 0 ? `, ${s.waste} pts gaspillés` : ""})</span>}
+              {s.relevance === "KEY" && <span style={{color:"#2e7d32"}}> ★</span>}
+              {!s.isFlat && s.miss > 0 && <span style={{color:"red"}}> (miss {s.miss})</span>}
               {s.gemmed && <span style={{color:"blue",marginLeft:"6px"}}>💎</span>}
             </p>
           ))}
         </div>
 
-        {cmp && (
+        {ranking && (
           <div style={{marginTop:"12px",padding:"8px",background:"#eee",borderRadius:"8px"}}>
-            <h3>Comparaison</h3>
-            <p>Meilleure substat : <b>{cmp.bestSub.statName}</b> ({cmp.bestSub.current}) — max : {cmp.maxBest}</p>
-            <p>Nombre de runes meilleures : <b>{cmp.countBetterBest}</b></p>
-            {cmp.secondBestSub && (
-              <>
-                <p>2ème substat : <b>{cmp.secondBestSub.statName}</b> ({cmp.secondBestSub.current}) — max : {cmp.maxSecond}</p>
-                <p>Nombre de runes meilleures sur les deux : <b>{cmp.countBetterBoth}</b></p>
-              </>
-            )}
-
-            {cmp.messages && cmp.messages.map((msg, i) => (
-              <p key={i} style={{color: msg.includes("combinaison") ? "blue" : "green"}}>
-                {msg}
+            <h3>Classement du groupe ({ranking.members.length} runes ≥ +12{ranking.pendingCount > 0 ? `, ${ranking.pendingCount} à monter` : ""})</h3>
+            {ranking.members.length === 0 && <p>Aucune rune ≥ +12 dans ce groupe.</p>}
+            {ranking.members.map((r, i) => (
+              <p key={r.rune_id} style={{
+                fontWeight: r.rune_id === rune.rune_id ? "bold" : "normal",
+                background: r.rune_id === rune.rune_id ? "#fff59d" : "transparent",
+                padding: "2px 4px", borderRadius: "4px",
+              }}>
+                #{i + 1} — score {r.score} — {r.verdict}
+                {" "}({r.breakdown.filter(s => !s.isFlat).map(s => `${s.statName} ${s.current}`).join(", ") || "aucune substat"})
               </p>
             ))}
           </div>
@@ -89,7 +138,8 @@ export function RuneViewer({ data }) {
     miss: "",
     mainstat: "",
     substat: "",
-    substatOrder: "desc"
+    substatOrder: "desc",
+    verdict: ""
   });
   const [sortKey, setSortKey] = useState("missPoints");
   const [selectedRune, setSelectedRune] = useState(null);
@@ -150,8 +200,8 @@ export function RuneViewer({ data }) {
           <option value="ATK%">ATK%</option>
           <option value="DEF%">DEF%</option>
           <option value="SPD">Speed</option>
-          <option value="CRI Rate">Crit Rate</option>
-          <option value="CRI Dmg">Crit Damage</option>
+          <option value="CRate">Crit Rate</option>
+          <option value="CDmg">Crit Damage</option>
           <option value="RES">Resistance</option>
           <option value="ACC">Accuracy</option>
         </select>
@@ -160,8 +210,8 @@ export function RuneViewer({ data }) {
           <option value="SPD">Speed</option>
           <option value="RES">Resistance</option>
           <option value="ACC">Accuracy</option>
-          <option value="CRI Rate">Crit Rate</option>
-          <option value="CRI Dmg">Crit Damage</option>
+          <option value="CRate">Crit Rate</option>
+          <option value="CDmg">Crit Damage</option>
           <option value="HP%">HP%</option>
           <option value="DEF%">DEF%</option>
           <option value="ATK%">ATK%</option>
@@ -178,6 +228,13 @@ export function RuneViewer({ data }) {
           <option value="4,14">Hero</option>
           <option value="5,15">Legend</option>
         </select>
+        <select value={filters.verdict} onChange={(e)=>setFilters({...filters,verdict:e.target.value})}>
+          <option value="">Verdict</option>
+          <option value="KEEP">KEEP</option>
+          <option value="SELL">SELL</option>
+          <option value="A_MONTER">À monter</option>
+          <option value="JUNK">JUNK</option>
+        </select>
         <input
           type="number"
           placeholder="Min Miss"
@@ -190,6 +247,9 @@ export function RuneViewer({ data }) {
       <div className="mb-2">
         <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => setSortKey("missPoints")}>
           Trier par MissPoints
+        </button>
+        <button className="px-3 py-1 bg-blue-500 text-white rounded" onClick={() => setSortKey("score")}>
+          Trier par Score
         </button>
       </div>
 
@@ -217,7 +277,8 @@ export function RuneViewer({ data }) {
               <h2>Slot {rune.slot}</h2>
             </div>
             <p><b>Main Stat:</b> {rune.mainstat?.statName} {rune.mainstat?.value}</p>
-            <p>MissPoints: {rune.missPoints}</p>
+            <p>MissPoints: {rune.missPoints}{rune.wastePoints > 0 && <span style={{color:"#b71c1c"}}> (+{rune.wastePoints} gaspillés)</span>}</p>
+            <p>Score: {rune.score} — <VerdictBadge rune={rune} /></p>
             {rune.isAncient === 1 && <p className="antique">✨ Antique ✨</p>}
           </div>
         ))}
@@ -233,15 +294,18 @@ export function RuneViewer({ data }) {
 export function App() {
   const [file, setFile] = useState(null);
   const [runes, setRunes] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
 
   async function selectFile() {
-    
     const filePath = await window.electronAPI.selectJsonFile();
-    if (!filePath) return; 
+    if (!filePath) return;
     setFile(filePath);
+    setRunes(await window.electronAPI.runAnalysis(filePath));
+  }
 
-    const analyzedRunes = await window.electronAPI.runAnalysis(filePath);
-    setRunes(analyzedRunes);
+  // Après sauvegarde des réglages : re-analyser le fichier courant
+  async function onSettingsSaved() {
+    if (file) setRunes(await window.electronAPI.runAnalysis(file));
   }
 
   return (
@@ -252,8 +316,15 @@ export function App() {
       <button className="px-4 py-2 bg-green-600 text-white rounded" onClick={selectFile}>
         Sélectionner un fichier JSON
       </button>
+      <button className="px-4 py-2 bg-gray-600 text-white rounded" style={{marginLeft:"8px"}}
+              onClick={() => setShowSettings(true)}>
+        ⚙️ Réglages
+      </button>
       {file && <p className="mt-2">Fichier sélectionné : {file}</p>}
       {runes.length > 0 && <RuneViewer data={runes} />}
+      {showSettings && (
+        <SettingsPanel onClose={() => setShowSettings(false)} onSaved={onSettingsSaved} />
+      )}
     </div>
   );
 }

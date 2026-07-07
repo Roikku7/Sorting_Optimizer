@@ -4,6 +4,20 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const logicPath = app.isPackaged ? "./src/la.obf.js" : "./src/logic_analyze.js";
 const { analyzeRunesFromFile } = require(logicPath);
+const { getDefaultSettings, sanitizeSettings } = require("./src/settings.js");
+
+function settingsFile() {
+  return path.join(app.getPath("userData"), "settings.json");
+}
+
+function loadSettings() {
+  try {
+    return sanitizeSettings(JSON.parse(fs.readFileSync(settingsFile(), "utf8")));
+  } catch (err) {
+    // fichier absent ou corrompu → défauts
+    return getDefaultSettings();
+  }
+}
 
 let mainWindow;
 
@@ -55,12 +69,29 @@ ipcMain.handle("get-icon-path", async (event, name) => {
     : path.join(__dirname, "assets", "icons");
   return path.join(base, `${name}.png`);
 });
+
+// ---------------------------------------------------
+// IPC — Réglages utilisateur
+// ---------------------------------------------------
+ipcMain.handle("get-settings", async () => loadSettings());
+
+ipcMain.handle("save-settings", async (event, raw) => {
+  const clean = sanitizeSettings(raw);
+  try {
+    fs.writeFileSync(settingsFile(), JSON.stringify(clean, null, 2));
+  } catch (err) {
+    console.error("Erreur sauvegarde réglages:", err);
+    throw new Error("Sauvegarde des réglages échouée");
+  }
+  return clean;
+});
+
 // ---------------------------------------------------
 // IPC — Lancer l’analyse Node
 // ---------------------------------------------------
 ipcMain.handle("run-analysis", async (event, inputFile) => {
   try {
-    const results = analyzeRunesFromFile(inputFile);
+    const results = analyzeRunesFromFile(inputFile, loadSettings());
 
     // Export de debug (facultatif, non lu par l'app)
     const outputFile = path.join(app.getPath("userData"), "sorting_rune.json");

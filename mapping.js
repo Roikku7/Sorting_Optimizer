@@ -2338,6 +2338,56 @@ module.exports = {
       return this.artifact.effectTypes.sub[type](value);
     }
   },
+
+  // ------------------ SCORING DATA (verdicts & ranking) ------------------
+  // Niveaux de pertinence d'une substat pour un set.
+  // Sparse : toute entrée absente = "NEUTRAL". SPD (8) est KEY partout
+  // (imposé aussi dans logic_analyze). Surchargeable via les réglages UI.
+  runeScoring: {
+    // Valeur max d'un proc, pour normaliser les substats entre elles.
+    ROLL_MAX: { 2: 8, 4: 8, 6: 8, 11: 8, 12: 8, 8: 6, 9: 6, 10: 7 },
+    RELEVANCE_WEIGHTS: { KEY: 1.25, NEUTRAL: 1.0, USELESS: 0 },
+    SPD_THRESHOLD_DEFAULT: 20,
+    SET_RELEVANCE: {
+      // Offensifs : ATK%/CRate/CDmg/SPD clés, RES inutile
+      5:  { 4: "KEY", 9: "KEY", 10: "KEY", 8: "KEY", 11: "USELESS" }, // Rage
+      4:  { 4: "KEY", 9: "KEY", 10: "KEY", 8: "KEY", 11: "USELESS" }, // Blade
+      8:  { 4: "KEY", 9: "KEY", 10: "KEY", 8: "KEY", 11: "USELESS" }, // Fatal
+      19: { 4: "KEY", 9: "KEY", 10: "KEY", 8: "KEY", 11: "USELESS" }, // Fight
+      // Défensifs : DEF%/HP%/SPD clés, ATK% inutile
+      2:  { 6: "KEY", 2: "KEY", 8: "KEY", 4: "USELESS" }, // Guard
+      20: { 6: "KEY", 2: "KEY", 8: "KEY", 4: "USELESS" }, // Determination
+      16: { 6: "KEY", 2: "KEY", 8: "KEY", 4: "USELESS" }, // Shield
+      7:  { 6: "KEY", 2: "KEY", 8: "KEY", 4: "USELESS" }, // Endure
+      // Universels : SPD clé, rien d'inutile
+      13: { 8: "KEY" }, // Violent
+      15: { 8: "KEY" }, // Will
+      3:  { 8: "KEY" }, // Swift
+      14: { 8: "KEY" }, // Nemesis
+      17: { 8: "KEY" }, // Revenge
+      1:  { 8: "KEY" }, // Energy
+      21: { 8: "KEY" }, // Enhance
+      99: { 8: "KEY" }, // Immemorial
+      25: { 8: "KEY" }, // Intangible
+      // Contrôle / débuff : ACC clé
+      10: { 8: "KEY", 12: "KEY" }, // Despair
+      6:  { 12: "KEY", 8: "KEY" }, // Focus
+      22: { 12: "KEY", 8: "KEY" }, // Accuracy
+      24: { 12: "KEY", 8: "KEY" }, // Seal
+      // Polyvalents
+      11: { 8: "KEY" }, // Vampire
+      18: { 8: "KEY" }, // Destroy
+      23: { 8: "KEY" }, // Tolerance
+    },
+    KEEP_COUNT_DEFAULTS: {
+      13: 6, 15: 6, 3: 6,                                   // Violent, Will, Swift
+      10: 4, 14: 4, 18: 4, 16: 4, 24: 4,                    // Despair, Nemesis, Destroy, Shield, Seal
+      5: 3, 4: 3, 8: 3, 2: 3, 6: 3, 17: 3, 19: 3, 20: 3, 22: 3, // Rage..Accuracy
+      1: 2, 7: 2, 21: 2, 23: 2, 11: 2, 25: 2, 99: 2,        // Energy..Immemorial
+    },
+    KEEP_COUNT_FALLBACK: 3,
+  },
+
   isAncient(item) {
     if (item.craft_type) {
       // craft

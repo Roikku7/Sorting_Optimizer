@@ -25,11 +25,41 @@ const TRACKED_TYPES = [2, 4, 6, 8, 9, 10, 11, 12];
 
 const SET_TOLERANCE = {
   13: 3, // Violent
-  14: 2, // Will
-  5:  2, // Despair
-  15: 2, // Destroy
-  16: 2  // Nemesis
+  15: 2, // Will
+  10: 2, // Despair
+  18: 2, // Destroy
+  14: 2  // Nemesis
 };
+
+const SCORING = mapping.runeScoring;
+
+// Pertinence effective d'une substat pour un set : surcharge utilisateur,
+// sinon défaut mapping, sinon NEUTRAL. SPD (8) est KEY par défaut partout.
+function getRelevance(setId, type, settings) {
+  const override = settings?.relevance?.[setId]?.[type];
+  if (override === "KEY" || override === "NEUTRAL" || override === "USELESS") {
+    return override;
+  }
+  const def = SCORING.SET_RELEVANCE[setId]?.[type];
+  if (def) return def;
+  if (type === 8) return "KEY";
+  return "NEUTRAL";
+}
+
+// Score de comparaison d'une rune : substats normalisées par la valeur max
+// d'un proc, pondérées par la pertinence du set. L'innate compte à 50 %.
+function computeScore(trackedSubs, innate, setId, settings) {
+  let score = 0;
+  for (const s of trackedSubs) {
+    const weight = SCORING.RELEVANCE_WEIGHTS[getRelevance(setId, s.type, settings)];
+    score += (s.current / SCORING.ROLL_MAX[s.type]) * weight;
+  }
+  if (innate && SCORING.ROLL_MAX[innate.type]) {
+    const weight = SCORING.RELEVANCE_WEIGHTS[getRelevance(setId, innate.type, settings)];
+    score += (innate.value / SCORING.ROLL_MAX[innate.type]) * weight * 0.5;
+  }
+  return Math.round(score * 100) / 100;
+}
 
 function heroicExpectedMax(type, assigned, grade, isAncient) {
   const { baseMin, baseMax, procMin, procMax } =
@@ -129,7 +159,7 @@ function collectAllRunes(data) {
 }
 
 // ------------------ ANALYSE D’UNE RUNE ------------------
-function analyzeRune(rune) {
+function analyzeRune(rune, settings) {
   const grade = rune.class;
   const isAncient = rune.extra >= 11 ? 1 : 0;
   const procTotal = Math.max(0, (rune.extra % 10) - 1); // extra 11–15 = ancient qualities
@@ -154,6 +184,7 @@ function analyzeRune(rune) {
 
     // Tracked stats
     const result = detectProcsMethodA(type, currentValue, procTotal, grade, isAncient);
+    const relevance = getRelevance(rune.set_id, type, settings);
 
     // Gem → miss = 0, mais on expose toute la fenêtre attendue
     if (gemFlag === 1) {
@@ -167,7 +198,9 @@ function analyzeRune(rune) {
         expectedMin: result.minPossible,
         expectedMax: result.maxPossible,
         miss: 0,
-        gemmed: true
+        gemmed: true,
+        relevance,
+        waste: relevance === "USELESS" ? result.procMax : 0
       });
       continue;
     }
@@ -198,12 +231,17 @@ function analyzeRune(rune) {
       expectedMin: result.minPossible,
       expectedMax: result.maxPossible,
       miss,
-      gemmed: false
+      gemmed: false,
+      relevance,
+      waste: relevance === "USELESS" ? result.assigned * result.procMax : 0
     });
   }
 
   const procAssignedDetected = trackedSubs.reduce((s, x) => s + x.assignedProcs, 0);
-  const missPoints = trackedSubs.reduce((s, x) => s + x.miss, 0);
+  const missPoints = trackedSubs.reduce(
+    (s, x) => s + (x.relevance === "USELESS" ? 0 : x.miss), 0);
+  const wastePoints = trackedSubs.reduce((s, x) => s + (x.waste || 0), 0);
+  const brokenSet = trackedSubs.some(x => !x.gemmed && x.assignedProcs >= 4);
 
   const mainstat = rune.pri_eff
     ? {
@@ -237,8 +275,8 @@ function analyzeRune(rune) {
   }
 
   // Reap
-  const REAP_SET_ALL_SLOTS = [13, 14, 16, 5, 4]; // Violent, Will, Nemesis, Despair, Swift
-  const REAP_SET_SLOT246 = [13, 14, 5, 4, 15, 17, 6, 2, 12, 10]; // + Destroy, Vampire, Rage, Blade, Seal, Shield
+  const REAP_SET_ALL_SLOTS = [13, 15, 14, 10, 3]; // Violent, Will, Nemesis, Despair, Swift
+  const REAP_SET_SLOT246 = [13, 15, 10, 3, 18, 11, 5, 4, 24, 16]; // + Destroy, Vampire, Rage, Blade, Seal, Shield
 
   let isLegendary = (rune.extra === 5 || rune.extra === 15);
   let reap = 0;
@@ -274,23 +312,102 @@ function analyzeRune(rune) {
     procTotal,
     procAssignedDetected,
     missPoints,
+    wastePoints,
+    score: computeScore(trackedSubs, innate, rune.set_id, settings),
+    brokenSet,
     threshold,
-    toJunk: missPoints > threshold,
+    toJunk: missPoints + wastePoints > threshold,
     breakdown: [...trackedSubs, ...flatSubs]
   };
 }
 
+// ------------------ CLASSEMENT PAR GROUPE & VERDICTS ------------------
+// Groupe de remplacement réel : slots 2/4/6 → set+slot+mainstat,
+// slots 1/3/5 → set+slot.
+function groupKeyOf(r) {
+  return [2, 4, 6].includes(r.slot)
+    ? `${r.set_id}|${r.slot}|${r.mainstat ? r.mainstat.type : "?"}`
+    : `${r.set_id}|${r.slot}`;
+}
+
+function keepCountOf(setId, settings) {
+  return settings?.keepCount?.[setId]
+    ?? SCORING.KEEP_COUNT_DEFAULTS[setId]
+    ?? SCORING.KEEP_COUNT_FALLBACK;
+}
+
+function spdThresholdOf(rune, settings) {
+  const t = settings?.spdThreshold || {};
+  return t.bySet?.[rune.set_id]
+    ?? t.bySlot?.[rune.slot]
+    ?? t.global
+    ?? SCORING.SPD_THRESHOLD_DEFAULT;
+}
+
+// Mutations en place : ajoute groupKey, rank, groupSize, verdict, protection.
+// Une exception protège la rune (verdict) mais ne masque jamais son état
+// objectif (rank / score / wastePoints restent calculés tels quels).
+function rankRunes(runes, settings) {
+  const groups = new Map();
+  for (const r of runes) {
+    r.groupKey = groupKeyOf(r);
+    if (!groups.has(r.groupKey)) groups.set(r.groupKey, []);
+    if (r.rune_lvl >= 12) groups.get(r.groupKey).push(r);
+  }
+
+  for (const members of groups.values()) {
+    members.sort((a, b) => b.score - a.score || a.rune_id - b.rune_id);
+    members.forEach((r, i) => {
+      r.rank = i + 1;
+      r.groupSize = members.length;
+    });
+  }
+
+  for (const r of runes) {
+    if (r.rune_lvl < 12) {
+      r.rank = null;
+      // groupSize = nb de concurrentes >= +12 (peut être 0 pour une rune en attente)
+      r.groupSize = groups.get(r.groupKey).length;
+      r.verdict = r.toJunk ? "JUNK" : "A_MONTER";
+    } else {
+      r.verdict = r.rank <= keepCountOf(r.set_id, settings) ? "KEEP" : "SELL";
+    }
+
+    // Exceptions — priorité : SPD > REAP > BROKEN_SET
+    // NB : rankRunes attend des runes issues d'analyzeRune (breakdown, score…).
+    // Seules les substats comptent pour la protection SPD (pas l'innate,
+    // dont les rolls sont trop faibles pour atteindre le seuil).
+    const spdSub = (r.breakdown || []).find(s => s.type === 8);
+    const spdValue = spdSub ? spdSub.current : 0;
+    r.protection = null;
+    if (spdValue >= spdThresholdOf(r, settings) && (r.verdict === "JUNK" || r.verdict === "SELL")) {
+      r.protection = "SPD";
+    } else if (r.reap === 1 && r.verdict === "JUNK") {
+      r.protection = "REAP";
+    } else if (r.brokenSet && (r.verdict === "JUNK" || r.verdict === "SELL")) {
+      r.protection = "BROKEN_SET";
+    }
+    if (r.protection) {
+      if (r.verdict === "JUNK") r.verdict = "A_MONTER";
+      // REAP ne protège que du JUNK (la rune sera jugée à +12)
+      if (r.verdict === "SELL" && r.protection !== "REAP") r.verdict = "KEEP";
+    }
+  }
+
+  return runes;
+}
+
 // ------------------ EXPORTS ------------------
-function analyzeRunesFromFile(inputFile) {
+function analyzeRunesFromFile(inputFile, settings) {
   const raw = fs.readFileSync(inputFile, "utf8");
   const data = JSON.parse(raw);
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r));
+  return rankRunes(runes.map(r => analyzeRune(r, settings)), settings);
 }
 
-function analyzeRunesFromData(data) {
+function analyzeRunesFromData(data, settings) {
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r));
+  return rankRunes(runes.map(r => analyzeRune(r, settings)), settings);
 }
 
-module.exports = { analyzeRunesFromFile, analyzeRunesFromData };
+module.exports = { analyzeRunesFromFile, analyzeRunesFromData, computeScore, rankRunes };

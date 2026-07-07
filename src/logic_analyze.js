@@ -31,6 +31,21 @@ const SET_TOLERANCE = {
   14: 2  // Nemesis
 };
 
+const SCORING = mapping.runeScoring;
+
+// Pertinence effective d'une substat pour un set : surcharge utilisateur,
+// sinon défaut mapping, sinon NEUTRAL. SPD (8) est KEY par défaut partout.
+function getRelevance(setId, type, settings) {
+  const override = settings?.relevance?.[setId]?.[type];
+  if (override === "KEY" || override === "NEUTRAL" || override === "USELESS") {
+    return override;
+  }
+  const def = SCORING.SET_RELEVANCE[setId]?.[type];
+  if (def) return def;
+  if (type === 8) return "KEY";
+  return "NEUTRAL";
+}
+
 function heroicExpectedMax(type, assigned, grade, isAncient) {
   const { baseMin, baseMax, procMin, procMax } =
     getBaseAndProcValues(type, grade, isAncient);
@@ -129,7 +144,7 @@ function collectAllRunes(data) {
 }
 
 // ------------------ ANALYSE D’UNE RUNE ------------------
-function analyzeRune(rune) {
+function analyzeRune(rune, settings) {
   const grade = rune.class;
   const isAncient = rune.extra >= 11 ? 1 : 0;
   const procTotal = Math.max(0, (rune.extra % 10) - 1); // extra 11–15 = ancient qualities
@@ -154,6 +169,7 @@ function analyzeRune(rune) {
 
     // Tracked stats
     const result = detectProcsMethodA(type, currentValue, procTotal, grade, isAncient);
+    const relevance = getRelevance(rune.set_id, type, settings);
 
     // Gem → miss = 0, mais on expose toute la fenêtre attendue
     if (gemFlag === 1) {
@@ -167,7 +183,9 @@ function analyzeRune(rune) {
         expectedMin: result.minPossible,
         expectedMax: result.maxPossible,
         miss: 0,
-        gemmed: true
+        gemmed: true,
+        relevance,
+        waste: relevance === "USELESS" ? result.procMax : 0
       });
       continue;
     }
@@ -198,12 +216,16 @@ function analyzeRune(rune) {
       expectedMin: result.minPossible,
       expectedMax: result.maxPossible,
       miss,
-      gemmed: false
+      gemmed: false,
+      relevance,
+      waste: relevance === "USELESS" ? result.assigned * result.procMax : 0
     });
   }
 
   const procAssignedDetected = trackedSubs.reduce((s, x) => s + x.assignedProcs, 0);
   const missPoints = trackedSubs.reduce((s, x) => s + x.miss, 0);
+  const wastePoints = trackedSubs.reduce((s, x) => s + (x.waste || 0), 0);
+  const brokenSet = trackedSubs.some(x => x.assignedProcs >= 4);
 
   const mainstat = rune.pri_eff
     ? {
@@ -274,23 +296,25 @@ function analyzeRune(rune) {
     procTotal,
     procAssignedDetected,
     missPoints,
+    wastePoints,
+    brokenSet,
     threshold,
-    toJunk: missPoints > threshold,
+    toJunk: missPoints + wastePoints > threshold,
     breakdown: [...trackedSubs, ...flatSubs]
   };
 }
 
 // ------------------ EXPORTS ------------------
-function analyzeRunesFromFile(inputFile) {
+function analyzeRunesFromFile(inputFile, settings) {
   const raw = fs.readFileSync(inputFile, "utf8");
   const data = JSON.parse(raw);
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r));
+  return runes.map(r => analyzeRune(r, settings));
 }
 
-function analyzeRunesFromData(data) {
+function analyzeRunesFromData(data, settings) {
   const runes = collectAllRunes(data);
-  return runes.map(r => analyzeRune(r));
+  return runes.map(r => analyzeRune(r, settings));
 }
 
 module.exports = { analyzeRunesFromFile, analyzeRunesFromData };

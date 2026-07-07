@@ -82,7 +82,7 @@ function RuneModal({ rune, data, onClose, icons }) {
             <b>{rune.wastePoints} points gaspillés</b> dans des substats inutiles pour ce set
           </p>
         )}
-        <p><b>MissPoints:</b> {rune.missPoints} / {rune.threshold}</p>
+        <p><b>MissPoints:</b> {rune.missPoints}{rune.wastePoints > 0 && ` + ${rune.wastePoints} gaspillés`} / {rune.threshold}</p>
         <p><b>Qualité:</b> {rune.extra}</p>
         {rune.isAncient === 1 && <p style={{color:"gold"}}>✨ Rune Antique</p>}
         {rune.innate && (

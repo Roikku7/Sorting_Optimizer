@@ -31,6 +31,7 @@ function defaultKeepCount(setId) {
 
 export function SettingsPanel({ onClose, onSaved }) {
   const [settings, setSettings] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     window.electronAPI.getSettings().then(setSettings);
@@ -62,17 +63,19 @@ export function SettingsPanel({ onClose, onSaved }) {
     setSettings({ ...settings, keepCount });
   }
 
-  async function save() {
-    const clean = await window.electronAPI.saveSettings(settings);
-    setSettings(clean);
-    onSaved();
+  async function persist(payload) {
+    try {
+      const clean = await window.electronAPI.saveSettings(payload);
+      setSettings(clean);
+      setError("");
+      onSaved();
+    } catch (e) {
+      setError("Échec de la sauvegarde des réglages (disque plein ou verrouillé ?).");
+    }
   }
 
-  async function reset() {
-    const clean = await window.electronAPI.saveSettings({});
-    setSettings(clean);
-    onSaved();
-  }
+  const save = () => persist(settings);
+  const reset = () => persist({});
 
   return (
     <div className="modal" onClick={onClose}>
@@ -139,6 +142,7 @@ export function SettingsPanel({ onClose, onSaved }) {
           </table>
         </div>
 
+        {error && <p style={{ color: "#b71c1c", fontWeight: "bold" }}>{error}</p>}
         <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
           <button onClick={save} style={{ flex: 1 }}>Enregistrer et relancer l'analyse</button>
           <button onClick={reset}>Réinitialiser aux défauts</button>

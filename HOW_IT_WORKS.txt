@@ -60,10 +60,24 @@ HOW DATA FLOWS
 Key scoring ideas:
   - extra = rune quality: 1..5 normal, 11..15 ancient (5/15 = legend)
   - missPoints = sum over substats of (max value it could have had
-    given its detected rolls) - (actual value)
+    given its detected rolls) - (actual value), en excluant les substats
+    INUTILES pour le set (pas de double pénalité avec le waste)
   - threshold = 8, +2 or +3 tolerance for good sets
     (Violent/Will/Despair/Destroy/Nemesis)
-  - toJunk = missPoints > threshold
+  - wastePoints = procs investis dans des substats inutiles pour le set
+    (table SET_RELEVANCE dans mapping.js, surchargeable via le panneau
+    "Réglages", persistée dans %APPDATA%/sorting_optimizer/settings.json)
+  - score = substats normalisées (valeur / roll max) pondérées par la
+    pertinence du set (CLÉ 1.25 / NEUTRE 1.0 / INUTILE 0), innate à 50%
+  - verdicts : JUNK (<+12, mauvais rolls/gaspillage) / A_MONTER (<+12,
+    prometteuse : monter avant de juger) / KEEP (>=+12, top N de son
+    groupe set+slot[+mainstat pour slots 2/4/6]) / SELL (>=+12, N runes
+    font mieux dans le groupe)
+  - exceptions qui protègent une rune (badge violet, état objectif
+    toujours affiché) : SPD >= 20 en substat (réglable), reap (légendaire
+    bon innate, protège du JUNK seulement), quad roll = 4 procs dans une
+    même substat -> utilisable en "broken set"
+  - toJunk = missPoints + wastePoints > threshold (runes <+12)
 
 
 HOW TO RUN IN DEV (2 terminals)

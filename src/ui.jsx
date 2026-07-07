@@ -49,19 +49,23 @@ function VerdictBadge({ rune }) {
 }
 
 function RuneModal({ rune, data, onClose, icons }) {
-  if (!rune) return null;
-
-  const ranking = getGroupRanking(rune, data);
+  // Hooks toujours appelés avant l'early return (Rules of Hooks :
+  // le nombre de hooks ne doit pas changer quand rune passe de null à objet)
   const [iconPath, setIconPath] = useState("");
-  
+
   useEffect(() => {
+    if (!rune) return;
     if (window.electronAPI?.getIconPath) {
       window.electronAPI.getIconPath(rune.set_name).then(setIconPath);
     } else {
       // fallback en dev : Vite sert /public/icone/
       setIconPath(`/icone/${rune.set_name}.png`);
     }
-  }, [rune.set_name]);
+  }, [rune?.set_name]);
+
+  if (!rune) return null;
+
+  const ranking = getGroupRanking(rune, data);
 
   return (
     <div className="modal" onClick={onClose}>

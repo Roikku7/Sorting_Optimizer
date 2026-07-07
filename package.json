@@ -19,6 +19,7 @@
       "preload.js",
       "package.json",
       "src/la.obf.js",
+      "src/settings.js",
       "mapping.js"
     ],
     "extraResources": [

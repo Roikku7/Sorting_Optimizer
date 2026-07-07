@@ -25,10 +25,10 @@ const TRACKED_TYPES = [2, 4, 6, 8, 9, 10, 11, 12];
 
 const SET_TOLERANCE = {
   13: 3, // Violent
-  14: 2, // Will
-  5:  2, // Despair
-  15: 2, // Destroy
-  16: 2  // Nemesis
+  15: 2, // Will
+  10: 2, // Despair
+  18: 2, // Destroy
+  14: 2  // Nemesis
 };
 
 function heroicExpectedMax(type, assigned, grade, isAncient) {
@@ -237,8 +237,8 @@ function analyzeRune(rune) {
   }
 
   // Reap
-  const REAP_SET_ALL_SLOTS = [13, 14, 16, 5, 4]; // Violent, Will, Nemesis, Despair, Swift
-  const REAP_SET_SLOT246 = [13, 14, 5, 4, 15, 17, 6, 2, 12, 10]; // + Destroy, Vampire, Rage, Blade, Seal, Shield
+  const REAP_SET_ALL_SLOTS = [13, 15, 14, 10, 3]; // Violent, Will, Nemesis, Despair, Swift
+  const REAP_SET_SLOT246 = [13, 15, 10, 3, 18, 11, 5, 4, 24, 16]; // + Destroy, Vampire, Rage, Blade, Seal, Shield
 
   let isLegendary = (rune.extra === 5 || rune.extra === 15);
   let reap = 0;
